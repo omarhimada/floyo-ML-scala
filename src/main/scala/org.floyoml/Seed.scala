@@ -1,7 +1,5 @@
 package org.floyoml
 
-import org.floyoml.kmeans.KMeansTrainer
-
 import com.beust.jcommander.{JCommander, Parameter}
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vector

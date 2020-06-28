@@ -1,6 +1,4 @@
-package org.floyoml.kmeans
-
-import org.floyoml.Shared
+package org.floyoml
 
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.KMeansModel
