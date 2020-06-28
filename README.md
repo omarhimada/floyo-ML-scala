@@ -1,5 +1,5 @@
 # FloyoML
-Open source Floyo.ML (component of floyalty.io) port to Scala, using Spark MLlib, elastic4s, and AWS S3
+An open-source port of Floyo.ML (component of floyalty.io) to Scala, using Spark MLlib, elastic4s, and AWS S3
 
 | Feature                                                                                 | Progress   |
 |-----------------------------------------------------------------------------------------|------------|
