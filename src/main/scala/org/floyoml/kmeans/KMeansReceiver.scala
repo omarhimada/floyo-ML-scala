@@ -1,4 +1,4 @@
-package org.floyoml
+package org.floyoml.kmeans
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.storage.StorageLevel

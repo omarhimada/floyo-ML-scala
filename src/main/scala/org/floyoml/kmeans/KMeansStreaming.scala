@@ -1,4 +1,6 @@
-package org.floyoml
+package org.floyoml.kmeans
+
+import org.floyoml.Shared
 
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.KMeansModel
@@ -6,7 +8,7 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import spray.json._
-import DefaultJsonProtocol._ // if you don't supply your own Protocol (see below)
+import DefaultJsonProtocol._
 
 object KMeansStreaming {
   def run(sparkContext: SparkContext, clusters: KMeansModel, predictOutput: String) {
