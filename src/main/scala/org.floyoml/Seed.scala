@@ -43,7 +43,7 @@ object Seed {
     // parse arguments
     JCommander.newBuilder.addObject(Arguments).build().parse(args.toArray: _*)
 
-    val sparkConfig = new SparkConf().setAppName("floyo.scala.Seed")
+    val sparkConfig = new SparkConf().setAppName(Shared.sparkAppName)
     val sparkContext = new SparkContext(sparkConfig)
 
     val clusters: KMeansModel = beginKMeans(sparkContext)
