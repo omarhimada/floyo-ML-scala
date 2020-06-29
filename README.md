@@ -8,4 +8,5 @@ An open-source port of Floyo.ML (component of floyalty.io) to Scala, using Spark
 | Product & incentive recommendations via matrix factorization (collaborative filtering)  | To-do      |
 | Email automation                                                                        | To-do      |
 | Elasticsearch integration                                                                       | Developing      |
+| S3 integration                                                                       | Developing      |
 | Kibana dashboard & visualizations                                                                        | To-do      |
