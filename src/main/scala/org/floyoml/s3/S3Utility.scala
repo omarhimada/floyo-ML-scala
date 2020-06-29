@@ -1,21 +1,21 @@
-package org.floyoml
+package org.floyoml.s3
 
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.auth.AWSCredentials
-import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.services.s3.iterable.S3Objects
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-
-import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
+
+import org.floyoml._
+import org.floyoml.shared.{Configuration, Context}
 
 object S3Utility {
   /**
    * Configure AWS S3 integration
    */
-  Context.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", Shared.Configuration.EnvironmentVariables.awsAccessKey)
-  Context.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", Shared.Configuration.EnvironmentVariables.awsSecretKey)
-  Context.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", Shared.Configuration.awsS3Endpoint)
+  Context.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", Configuration.EnvironmentVariables.awsAccessKey)
+  Context.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", Configuration.EnvironmentVariables.awsSecretKey)
+  Context.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", Configuration.awsS3Endpoint)
 
   private val s3Client = initS3Client
 
@@ -32,8 +32,8 @@ object S3Utility {
     new AWSCredentialsProvider {
       final private val credentials =
         new BasicAWSCredentials(
-          Shared.Configuration.EnvironmentVariables.awsAccessKey,
-          Shared.Configuration.EnvironmentVariables.awsSecretKey)
+          Configuration.EnvironmentVariables.awsAccessKey,
+          Configuration.EnvironmentVariables.awsSecretKey)
 
       override
       def getCredentials: AWSCredentials = credentials
@@ -92,8 +92,8 @@ object S3Utility {
    * @return data-to-train directory, or data-to-process directory
    */
   private def getProcessBucketPathSuffix(isTraining: Boolean): String =
-    if (isTraining) Shared.Configuration.S3.Common.dataToTrainWithDirectory
-    else Shared.Configuration.S3.Common.dataToProcessDirectory
+    if (isTraining) Configuration.S3.Common.dataToTrainWithDirectory
+    else Configuration.S3.Common.dataToProcessDirectory
 
   /**
    * Determine the bucket to use for a specific ML task
@@ -102,7 +102,7 @@ object S3Utility {
    */
   private def getProcessBucketFor(process: MLTask): String =
     process match {
-      case Segmentation(_) => s"$Shared.Configuration.S3.kMeansDataDirectory"
+      case Segmentation(_) => Configuration.S3.kMeansDataDirectory
       case Recommendations(_) => throw new NotImplementedError("to-do")
       case ChurnPrediction(_) => throw new NotImplementedError("to-do")
     }

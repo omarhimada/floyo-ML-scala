@@ -1,9 +1,11 @@
 package org.floyoml
 
 import com.beust.jcommander.{JCommander, Parameter}
+import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vector
-import org.apache.spark.{SparkConf, SparkContext}
+import org.floyoml.kmeans.{KMeansStreaming, KMeansTrainer}
+import org.floyoml.shared.Context
 
 object Seed {
   /**
@@ -52,9 +54,12 @@ object Seed {
     // parse arguments
     JCommander.newBuilder.addObject(Arguments).build().parse(args.toArray: _*)
 
-    val clusters: KMeansModel = beginKMeans(Context.sparkContext)
+    val persistedKMeansModel: KMeansModel = beginKMeans(Context.sparkContext)
 
-    // todo
-    // ElasticsearchWriter
+    KMeansStreaming.run(
+      persistedKMeansModel,
+      // todo
+      predictionOutputLocation = "",
+      writeToElasticsearch = true)
   }
 }

@@ -1,11 +1,9 @@
-package org.floyoml
+package org.floyoml.kmeans
 
 import java.io.File
-
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
-
-import scala.collection.mutable.ListBuffer
+import org.floyoml.shared.Utility
 
 object KMeansTrainer {
   private val _iterations = 20
@@ -25,7 +23,7 @@ object KMeansTrainer {
     val trainRdd = sparkContext.textFile(trainingData)
 
     // parse and cache
-    val parsedData = trainRdd.map(Shared.Utility.featurize).cache()
+    val parsedData = trainRdd.map(Utility.featurize).cache()
 
     // train model
     val model = KMeans.train(parsedData, numClusters, _iterations)
@@ -36,7 +34,7 @@ object KMeansTrainer {
     val example =
       trainRdd
         .sample(withReplacement = false, 0.1)
-        .map(s => (s, model.predict(Shared.Utility.featurize(s))))
+        .map(s => (s, model.predict(Utility.featurize(s))))
         .collect()
 
     println("Prediction examples:")
