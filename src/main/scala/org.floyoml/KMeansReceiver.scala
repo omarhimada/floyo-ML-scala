@@ -20,7 +20,14 @@ class KMeansReceiver extends Receiver[String](StorageLevel.MEMORY_ONLY)
   }
 
   override def run(): Unit = {
-    //receive()
+    // todo
+    val training = true
+    val objectPaths = S3Utility.retrieveS3ObjectPathsForStreaming(Segmentation(training), training)
+
+    for (path <- objectPaths) {
+      // todo don't just store the path, get the data and store the data
+      store(path)
+    }
   }
 
   /*private def receive(): Unit = {
@@ -31,5 +38,4 @@ class KMeansReceiver extends Receiver[String](StorageLevel.MEMORY_ONLY)
       }
     })
   }*/
-
 }

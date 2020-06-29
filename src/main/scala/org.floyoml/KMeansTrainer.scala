@@ -5,17 +5,27 @@ import java.io.File
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 
+import scala.collection.mutable.ListBuffer
+
 object KMeansTrainer {
   private val _iterations = 20
 
-  def train(sparkContext: SparkContext, trainData: String, numClusters: Int, modelLocation: String): KMeansModel = {
+  /**
+   * Execute K-Means training
+   * @param sparkContext existing spark context
+   * @param trainingData training data that was received from S3
+   * @param numClusters number of clusters ('K' in K-Means)
+   * @param modelLocation location to persist the trained model
+   * @return completed K-Means model
+   */
+  def train(sparkContext: SparkContext, trainingData: String, numClusters: Int, modelLocation: String): KMeansModel = {
     if (new File(modelLocation).exists) deletePreviousModel(modelLocation)
 
     // resilient distributed dataset (RDD) for training
-    val trainRdd = sparkContext.textFile(trainData)
+    val trainRdd = sparkContext.textFile(trainingData)
 
     // parse and cache
-    val parsedData = trainRdd.map(Shared.featurize).cache()
+    val parsedData = trainRdd.map(Shared.Utility.featurize).cache()
 
     // train model
     val model = KMeans.train(parsedData, numClusters, _iterations)
@@ -26,7 +36,7 @@ object KMeansTrainer {
     val example =
       trainRdd
         .sample(withReplacement = false, 0.1)
-        .map(s => (s, model.predict(Shared.featurize(s))))
+        .map(s => (s, model.predict(Shared.Utility.featurize(s))))
         .collect()
 
     println("Prediction examples:")
@@ -35,6 +45,10 @@ object KMeansTrainer {
     model
   }
 
+  /**
+   * Delete the previously persisted ML model from the provided path
+   * @param path the path of the ML model to delete
+   */
   def deletePreviousModel(path: String): Unit = {
     def getRecursively(f: File): Seq[File] =
       f.listFiles.filter(_.isDirectory).flatMap(getRecursively) ++ f.listFiles

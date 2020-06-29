@@ -9,9 +9,13 @@ import spray.json._
 import DefaultJsonProtocol._
 
 object KMeansStreaming {
-  def run(sparkContext: SparkContext, clusters: KMeansModel, predictOutput: String) {
-    val ssc = new StreamingContext(sparkContext, Seconds(5))
-    val dStream = ssc.receiverStream(new KMeansReceiver)
+  /**
+   * Initialize a new StreamingContext to retrieve data from AWS S3
+   */
+  private val streamingContext = new StreamingContext(Context.sparkContext, Seconds(60))
+
+  def run(clusters: KMeansModel, predictOutput: String) {
+    val dStream = streamingContext.receiverStream(new KMeansReceiver)
 
     val stream: DStream[String] =
       dStream
@@ -38,8 +42,11 @@ object KMeansStreaming {
       kMeansStream.saveAsTextFiles(predictOutput) // save to results to the file, if file name specified
     }
 
-    ssc.start() // run spark streaming application
-    ssc.awaitTermination() // wait the end of the application
+    // run spark streaming application
+    streamingContext.start
+
+    // wait the end of the application
+    streamingContext.awaitTermination
   }
 
   /**
@@ -47,7 +54,7 @@ object KMeansStreaming {
    */
   def transformAndPredict(dStream: DStream[String], clusters: KMeansModel): DStream[(String, Int)] = {
     dStream
-      .map(s => (s, Shared.featurize(s)))
+      .map(s => (s, Shared.Utility.featurize(s)))
       .map(p => (p._1, clusters.predict(p._2)))
   }
 }
