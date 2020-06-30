@@ -1,5 +1,7 @@
 package org.floyoml.kmeans
 
+import java.util.UUID
+
 import com.sksamuel.elastic4s.Indexable
 import com.sksamuel.elastic4s.IndexAndType
 import org.apache.spark.mllib.clustering.KMeansModel
@@ -73,7 +75,7 @@ object KMeansStreaming {
         streamOfTuples.foreachRDD { rdd =>
           rdd.foreach { case (message, cluster) =>
             // write each prediction to Elasticsearch
-            esWriter.write(Seq(ClusterPrediction(message, cluster)))
+            esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, message, cluster)))
           }
         }
       }

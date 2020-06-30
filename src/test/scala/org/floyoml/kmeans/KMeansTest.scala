@@ -1,4 +1,4 @@
-package org.floyoml
+package org.floyoml.kmeans
 
 import org.junit._
 

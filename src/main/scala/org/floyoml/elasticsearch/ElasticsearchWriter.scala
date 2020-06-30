@@ -36,13 +36,13 @@ class ElasticsearchWriter[T: Indexable](
    * @param i The base index string
    * @return Formatted index with the pattern "myIndex-yyyy.MM.dd"
    */
-  def rollingDateIndex(i: String): String = s"$i$rollingDateIndexSuffix"
+  private def rollingDateIndex(i: String): String = s"$i$rollingDateIndexSuffix"
 
   /**
    * Used when rollingDate == true to construct the index's date suffix
    * @return Current UTC date as a string in the format "-yyyy.MM.dd"
    */
-  def rollingDateIndexSuffix: String = {
+  private def rollingDateIndexSuffix: String = {
     val format = new SimpleDateFormat("yyyy.MM.dd")
     format.setTimeZone(new SimpleTimeZone(SimpleTimeZone.UTC_TIME, "UTC"))
     val f = format.format(new Date())
