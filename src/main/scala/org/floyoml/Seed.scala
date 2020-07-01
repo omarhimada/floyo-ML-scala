@@ -1,28 +1,27 @@
 package org.floyoml
 
 import com.beust.jcommander.{JCommander, Parameter}
+
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vector
-import org.floyoml.kmeans.{KMeansStreaming, KMeansTrainer}
-import org.floyoml.shared.Context
+
+import org.floyoml.kmeans.{KMeansPredictorStream, KMeansTrainer}
+import org.floyoml.shared.{Configuration, Context}
 
 object Seed {
   /**
    * Arguments passed to Seed, defining the expected behaviour of the process
    */
   object Arguments {
-    @Parameter(names = Array("-km-nc", "--k-means-clusters"))
-    var clusters: Int = 3
-
     @Parameter(names = Array("-po", "--outputPredictions"))
     var outputPredictions: Option[String] = None
 
     /**
-     * If provided will train the data and persist a model
+     * Whether or not to attempt training
      */
-    @Parameter(names = Array("-td", "--dataToTrain"))
-    var dataToTrain: Option[String] = None
+    @Parameter(names = Array("-t", "--train"))
+    var train: Boolean = false
 
     /**
      * New models will be persisted here, or an existing model will be loaded from here
@@ -39,10 +38,10 @@ object Seed {
   def beginKMeans(c: SparkContext): KMeansModel =
     Arguments.modelLocation match {
       case Some(location) =>
-        Arguments.dataToTrain match {
-          case Some(data) => KMeansTrainer.train(c, data, Arguments.clusters, location)
-          case None => new KMeansModel(c.objectFile[Vector](location).collect())
-        }
+        if (Arguments.train)
+          KMeansTrainer.train(c, location)
+        else
+          new KMeansModel(c.objectFile[Vector](location).collect())
       case None => throw new IllegalArgumentException("No model location or training data was specified")
     }
 
@@ -56,10 +55,14 @@ object Seed {
 
     val persistedKMeansModel: KMeansModel = beginKMeans(Context.sparkContext)
 
-    KMeansStreaming.run(
+    /**
+     * K-Means
+     */
+    KMeansPredictorStream.run(
       persistedKMeansModel,
-      // todo
-      predictionOutputLocation = "",
+      // persist predictions locally
+      predictionOutputLocation = Configuration.Behaviour.Output.kMeansPredictionsLocalPath,
+      // persist predictions in Elasticsearch
       writeToElasticsearch = true)
   }
 }

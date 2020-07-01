@@ -1,23 +1,23 @@
 package org.floyoml.kmeans
 
 import java.util.UUID
+import scala.collection.mutable.ListBuffer
 
-import com.sksamuel.elastic4s.Indexable
 import com.sksamuel.elastic4s.IndexAndType
+
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
+
 import spray.json._
 import DefaultJsonProtocol._
-import org.apache.spark.rdd.RDD
+
 import org.floyoml.Segmentation
 import org.floyoml.elasticsearch.ElasticsearchWriter
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context, Utility}
 
-import scala.collection.mutable.ListBuffer
-
-object KMeansStreaming {
+object KMeansPredictorStream {
   /**
    * Use a persisted K-Means model to make predictions
    * @param persistedKMeansModel an existing, trained K-Means model

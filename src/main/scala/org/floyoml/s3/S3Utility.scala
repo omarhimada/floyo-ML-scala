@@ -3,6 +3,7 @@ package org.floyoml.s3
 import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.services.s3.iterable.S3Objects
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 

@@ -10,7 +10,7 @@ object Context {
 
   val sparkSession: SparkSession =
     SparkSession.builder()
-      .master("local[4]")
+      .master(Configuration.Behaviour.sparkMaster)
       .appName(Configuration.sparkAppName)
       .getOrCreate()
 }

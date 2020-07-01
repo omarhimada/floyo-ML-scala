@@ -39,7 +39,7 @@ object Configuration {
     /**
      * @return name of the AWS S3 bucket to use, as configured in the environment variables
      */
-    def awsS3BucketName: String = sys.env(envAWSSecretKey)
+    def awsS3BucketName: String = sys.env(envAWSS3BucketName)
 
     /**
      * name of the environment variable that configures the client ID
@@ -82,5 +82,19 @@ object Configuration {
   object Elasticsearch {
     val kMeansTrainingIndex = "idx-kmeans-training-output"
     val kMeansProcessIndex = "idx-kmeans-process-output"
+  }
+
+  /**
+   * Constants related to the behaviour of the system
+   */
+  object Behaviour {
+    val sparkMaster = "local[1]"
+
+    /**
+     * Constants related to system output
+     */
+    object Output {
+      val kMeansPredictionsLocalPath = "/output/kmeans/"
+    }
   }
 }
