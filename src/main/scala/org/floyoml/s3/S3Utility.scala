@@ -6,8 +6,8 @@ import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
-
 import org.floyoml._
+import org.floyoml.input.{ChurnPrediction, MLTask, Recommendations, Segmentation}
 import org.floyoml.shared.{Configuration, Context}
 
 object S3Utility {

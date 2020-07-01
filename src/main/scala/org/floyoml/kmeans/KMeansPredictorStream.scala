@@ -1,23 +1,22 @@
 package org.floyoml.kmeans
 
 import java.util.UUID
+
 import scala.collection.mutable.ListBuffer
-
 import com.sksamuel.elastic4s.IndexAndType
-
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-
 import spray.json._
 import DefaultJsonProtocol._
-
-import org.floyoml.Segmentation
 import org.floyoml.elasticsearch.ElasticsearchWriter
+import org.floyoml.input.Segmentation
+import org.floyoml.output.ClusterPrediction
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context, Utility}
 
 object KMeansPredictorStream {
+
   /**
    * Use a persisted K-Means model to make predictions
    * @param persistedKMeansModel an existing, trained K-Means model
@@ -66,7 +65,7 @@ object KMeansPredictorStream {
         val esWriter = new ElasticsearchWriter[ClusterPrediction](
           uri = Configuration.EnvironmentVariables.elasticsearchURI,
           rollingDate = true,
-          indexAndType = IndexAndType(Configuration.Elasticsearch.kMeansTrainingIndex, classOf[ClusterPrediction].getSimpleName),
+          indexAndType = IndexAndType(Configuration.Elasticsearch.kMeansProcessIndex, classOf[ClusterPrediction].getSimpleName),
           numberOfBulkDocumentsToWrite = 10,
           initialDocuments = ListBuffer.empty[ClusterPrediction]
         )
@@ -84,7 +83,7 @@ object KMeansPredictorStream {
     // run spark streaming application
     streamingContext.start
 
-    // wait the end of the application
+    // wait until the end of the application
     streamingContext.awaitTermination
   }
 

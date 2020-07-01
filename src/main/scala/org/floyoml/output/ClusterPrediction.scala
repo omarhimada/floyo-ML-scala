@@ -1,7 +1,6 @@
-package org.floyoml.kmeans
+package org.floyoml.output
 
 import com.sksamuel.elastic4s.Indexable
-
 import spray.json._
 
 case class ClusterPrediction(id: String, message: String, cluster: Int)

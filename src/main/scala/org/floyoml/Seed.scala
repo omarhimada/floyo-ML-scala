@@ -32,16 +32,15 @@ object Seed {
 
   /**
    * Initializes the K-Means clustering process
-   * @param c Existing SparkContext
    * @return completed KMeansModel
    */
-  def beginKMeans(c: SparkContext): KMeansModel =
+  def beginKMeans: KMeansModel =
     Arguments.modelLocation match {
       case Some(location) =>
         if (Arguments.train)
-          KMeansTrainer.train(c, location)
+          KMeansTrainer.train(location)
         else
-          new KMeansModel(c.objectFile[Vector](location).collect())
+          new KMeansModel(Context.sparkContext.objectFile[Vector](location).collect())
       case None => throw new IllegalArgumentException("No model location or training data was specified")
     }
 
@@ -53,7 +52,7 @@ object Seed {
     // parse arguments
     JCommander.newBuilder.addObject(Arguments).build().parse(args.toArray: _*)
 
-    val persistedKMeansModel: KMeansModel = beginKMeans(Context.sparkContext)
+    val persistedKMeansModel: KMeansModel = beginKMeans
 
     /**
      * K-Means

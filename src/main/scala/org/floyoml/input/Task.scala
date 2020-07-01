@@ -1,22 +1,22 @@
-package org.floyoml
+package org.floyoml.input
 
 /**
- * some task or function that the system will execute
+ * Some task or function that the system will execute
  */
 trait Task
 
 /**
- * some task that automates a piece of functionality
+ * Some task that automates a piece of functionality
  */
 trait Automation extends Task
 
 /**
- * automation task for sending emails to customers/users
+ * Automation task for sending emails to customers/users
  */
 case class EmailAutomation(provider: String) extends Automation
 
 /**
- * some task or function related to ML that the system will execute
+ * Some task or function related to ML that the system will execute
  */
 trait MLTask extends Task
 

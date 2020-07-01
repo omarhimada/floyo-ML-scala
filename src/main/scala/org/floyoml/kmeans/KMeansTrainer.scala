@@ -1,15 +1,12 @@
 package org.floyoml.kmeans
 
 import java.io.File
-import scala.collection.mutable.ListBuffer
 
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
-import org.apache.spark.rdd.RDD
 
-import org.floyoml.Segmentation
+import org.floyoml.input.Segmentation
 import org.floyoml.s3.S3Utility
-import org.floyoml.shared.Utility
+import org.floyoml.shared.{Context, Utility}
 
 object KMeansTrainer {
   /**
@@ -29,29 +26,17 @@ object KMeansTrainer {
 
   /**
    * Execute K-Means training
-   * @param sparkContext existing spark context
    * @param modelLocation location to persist the trained model
    * @return completed K-Means model
    */
-  def train(sparkContext: SparkContext, modelLocation: String): KMeansModel = {
-    if (new File(modelLocation).exists) deletePreviousModel(modelLocation)
+  def train(modelLocation: String): KMeansModel = {
+    if (new File(modelLocation).exists) Utility.deletePreviousModel(modelLocation)
 
     // get the paths to the  latest segmentation training data in S3
     val objectPaths = S3Utility.retrieveS3ObjectPathsForStreaming(Segmentation(true), isTraining = true)
 
-    val manyDatasets = ListBuffer.empty[RDD[String]]
-
-    // for each relevant object in S3...
-    for (objectPath <- objectPaths) {
-      // resilient distributed dataset (RDD) for training
-      val rdd = sparkContext.textFile(objectPath)
-
-      // append the RDD to our collection of RDDs
-      manyDatasets.append(rdd)
-    }
-
     // union our many datasets to a single RDD
-    val datasetToTrain = sparkContext.union(manyDatasets)
+    val datasetToTrain = Utility.unionManyDatasets(objectPaths)
 
     // parse and cache
     val parsedData = datasetToTrain.map(Utility.featurize).cache
@@ -80,7 +65,7 @@ object KMeansTrainer {
     }
 
     // output model as RDD to modelLocation
-    sparkContext.makeRDD(modelWithIdealNumberOfClusters.clusterCenters, idealNumberOfClusters).saveAsObjectFile(modelLocation)
+    Context.sparkContext.makeRDD(modelWithIdealNumberOfClusters.clusterCenters, idealNumberOfClusters).saveAsObjectFile(modelLocation)
 
     modelWithIdealNumberOfClusters
 
@@ -92,21 +77,5 @@ object KMeansTrainer {
     //
     //      println("Prediction examples:")
     //      example.foreach(println)
-  }
-
-  /**
-   * Delete the previously persisted ML model from the provided path
-   * @param path the path of the ML model to delete
-   */
-  def deletePreviousModel(path: String): Unit = {
-    def getRecursively(f: File): Seq[File] =
-      f.listFiles.filter(_.isDirectory).flatMap(getRecursively) ++ f.listFiles
-
-    getRecursively(new File(path)).foreach{f =>
-      if (!f.delete())
-        throw new RuntimeException("Failed to delete " + f.getAbsolutePath)
-    }
-
-    new File(path).delete()
   }
 }

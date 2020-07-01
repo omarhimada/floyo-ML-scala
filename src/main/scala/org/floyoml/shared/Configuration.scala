@@ -82,6 +82,9 @@ object Configuration {
   object Elasticsearch {
     val kMeansTrainingIndex = "idx-kmeans-training-output"
     val kMeansProcessIndex = "idx-kmeans-process-output"
+
+    val matrixFactorizationTrainingIndex = "idx-collab-training-output"
+    val matrixFactorizationProcessIndex = "idx-collab-process-output"
   }
 
   /**
