@@ -1,11 +1,11 @@
 package org.floyoml
 
 import com.beust.jcommander.{JCommander, Parameter}
-
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vector
-
+import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
+import org.floyoml.collab.{MatrixFactorizationPredictorStream, MatrixFactorizationTrainer}
 import org.floyoml.kmeans.{KMeansPredictorStream, KMeansTrainer}
 import org.floyoml.shared.{Configuration, Context}
 
@@ -24,24 +24,46 @@ object Seed {
     var train: Boolean = false
 
     /**
-     * New models will be persisted here, or an existing model will be loaded from here
+     * New KMeans models will be persisted here, or an existing model will be loaded from here
      */
-    @Parameter(names = Array("-ml", "--modelLocation"))
-    var modelLocation: Option[String] = None
+    @Parameter(names = Array("-km-ml", "--kMeansModelLocation"))
+    var kMeansModelLocation: Option[String] = None
+
+    /**
+     * New Matrix Factorization models will be persisted here, or an existing model will be loaded from here
+     */
+    @Parameter(names = Array("-mf-ml", "--matrixFactorizationModelLocation"))
+    var matrixFactorizationModelLocation: Option[String] = None
   }
 
   /**
-   * Initializes the K-Means clustering process
+   * Initializes the K-Means clustering process, either training a new model
+   * or loading an existing model
    * @return completed KMeansModel
    */
   def beginKMeans: KMeansModel =
-    Arguments.modelLocation match {
+    Arguments.kMeansModelLocation match {
       case Some(location) =>
         if (Arguments.train)
           KMeansTrainer.train(location)
         else
-          new KMeansModel(Context.sparkContext.objectFile[Vector](location).collect())
-      case None => throw new IllegalArgumentException("No model location or training data was specified")
+          KMeansModel.load(Context.sparkContext, location)
+      case None => throw new IllegalArgumentException("No K-Means model location or training data was specified")
+    }
+
+  /**
+   * Initializes the Matrix Factorization recommendations process, either training a new model
+   * or loading an existing model
+   * @return completed MatrixFactorizationModel
+   */
+  def beginMatrixFactorization: MatrixFactorizationModel =
+    Arguments.matrixFactorizationModelLocation match {
+      case Some(location) =>
+        if (Arguments.train)
+          MatrixFactorizationTrainer.train(location)
+        else
+          MatrixFactorizationModel.load(Context.sparkContext, location)
+      case None => throw new IllegalArgumentException("No Matrix Factorization model location or training data was specified")
     }
 
   /**
@@ -52,15 +74,23 @@ object Seed {
     // parse arguments
     JCommander.newBuilder.addObject(Arguments).build().parse(args.toArray: _*)
 
-    val persistedKMeansModel: KMeansModel = beginKMeans
-
     /**
      * K-Means
      */
     KMeansPredictorStream.run(
-      persistedKMeansModel,
+      beginKMeans,
       // persist predictions locally
       predictionOutputLocation = Configuration.Behaviour.Output.kMeansPredictionsLocalPath,
+      // persist predictions in Elasticsearch
+      writeToElasticsearch = true)
+
+    /**
+     * Matrix Factorization
+     */
+    MatrixFactorizationPredictorStream.run(
+      beginMatrixFactorization,
+      // persist predictions locally
+      predictionOutputLocation = Configuration.Behaviour.Output.matrixFactorizationPredictionsLocalPath,
       // persist predictions in Elasticsearch
       writeToElasticsearch = true)
   }

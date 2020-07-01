@@ -97,7 +97,8 @@ object Configuration {
      * Constants related to system output
      */
     object Output {
-      val kMeansPredictionsLocalPath = "/output/kmeans/"
+      val kMeansPredictionsLocalPath = "/output/k-means/"
+      val matrixFactorizationPredictionsLocalPath = "/output/matrix-factorization/"
     }
   }
 }

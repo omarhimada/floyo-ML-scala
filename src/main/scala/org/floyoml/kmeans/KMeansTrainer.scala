@@ -64,8 +64,8 @@ object KMeansTrainer {
       }
     }
 
-    // output model as RDD to modelLocation
-    Context.sparkContext.makeRDD(modelWithIdealNumberOfClusters.clusterCenters, idealNumberOfClusters).saveAsObjectFile(modelLocation)
+    // persist the trained model
+    modelWithIdealNumberOfClusters.save(Context.sparkContext, modelLocation)
 
     modelWithIdealNumberOfClusters
 

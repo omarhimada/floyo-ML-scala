@@ -5,10 +5,9 @@ import java.io.File
 import org.apache.spark.mllib.recommendation.ALS
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
-
 import org.floyoml.input.Recommendations
 import org.floyoml.s3.S3Utility
-import org.floyoml.shared.Utility
+import org.floyoml.shared.{Context, Utility}
 
 object MatrixFactorizationTrainer {
   private val _rank = 10
@@ -42,6 +41,9 @@ object MatrixFactorizationTrainer {
     val testPredictions = modelForRecommendations.predict(rddToTestWith)
 
     // todo: write test predictions to Elasticsearch
+
+    // persist the trained model
+    modelForRecommendations.save(Context.sparkContext, modelLocation)
 
     modelForRecommendations
   }
