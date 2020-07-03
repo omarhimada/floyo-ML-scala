@@ -50,7 +50,7 @@ object Utility {
   def computeTopPercentile(data: RDD[Double]): Double = computePercentile(data, 95)
 
   /**
-   * Compute the top-end percentile
+   * Compute the bottom-end percentile
    * @param data: input data set of integers
    * @return value of input data at the 5th percentile
    */
