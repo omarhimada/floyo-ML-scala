@@ -8,7 +8,7 @@ Distributed ML for eCommerce platforms (recommendations, churn prediction, segme
       - *AWS SNS trigger on S3*
       - *cron*
       - *SBT CLI*
-3. Search written Elasticsearch data to automate some business process
+3. Search/scroll written Elasticsearch data to automate some business process
     - e.g.:
       - *automate emails to key customer segments such as most loyal, small baskets, infrequent shoppers, etc.*
       - *recommend products intelligently on your eCommerce website*
