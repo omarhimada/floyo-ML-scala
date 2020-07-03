@@ -2,9 +2,7 @@ package org.floyoml.collab
 
 import java.io.File
 
-import org.apache.spark.mllib.recommendation.ALS
-import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
-import org.apache.spark.mllib.recommendation.Rating
+import org.apache.spark.mllib.recommendation.{ALS, MatrixFactorizationModel, Rating}
 import org.floyoml.input.Recommendations
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Context, Utility}

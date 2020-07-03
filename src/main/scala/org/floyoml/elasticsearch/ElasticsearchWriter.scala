@@ -2,12 +2,13 @@ package org.floyoml.elasticsearch
 
 import java.text.SimpleDateFormat
 import java.util.{Date, SimpleTimeZone}
-import scala.collection.mutable.ListBuffer
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import com.sksamuel.elastic4s.indexes.IndexRequest
 import com.sksamuel.elastic4s.{IndexAndType, Indexable, RefreshPolicy}
+
+import scala.collection.mutable.ListBuffer
 
 class ElasticsearchWriter[T: Indexable](
   uri: String,

@@ -1,18 +1,16 @@
 package org.floyoml.collab
 
-import scala.collection.mutable.ListBuffer
-
 import com.sksamuel.elastic4s.IndexAndType
-
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-
 import org.floyoml.elasticsearch.ElasticsearchWriter
 import org.floyoml.input.Recommendations
 import org.floyoml.output.RatedTransaction
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context}
+
+import scala.collection.mutable.ListBuffer
 
 object MatrixFactorizationPredictorStream {
   /**
