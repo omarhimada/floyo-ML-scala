@@ -41,18 +41,6 @@ object KMeansPredictorStream {
           // (customerId, date, recency, monetary value)
           .map(t => (t.customerId, t.date, t.unitRecency, t.unitMonetary))
 
-      // minimum recency in a group of related transactions
-      def minUnitRecency(grouped: Iterable[(Int, DateTime, Double, Double)]): Double =
-        grouped.map(_._3).min
-
-      // frequency (number of transactions in a group)
-      def frequency(grouped: Iterable[(Int, DateTime, Double, Double)]): Double =
-        grouped.size
-
-      // sum the monetary value of a group of transactions
-      def sumGroupedMonetaryValue(grouped: Iterable[(Int, DateTime, Double, Double)]): Double =
-        grouped.map(_._4).sum
-
       stream.foreachRDD { rdd =>
         val grouped =
           rdd
@@ -62,11 +50,11 @@ object KMeansPredictorStream {
               // RDD[(customerId: Int, R: Double, F: Double, M: Double)]
               (grouped._1,
                 // recency: min(time since last transaction)
-                minUnitRecency(grouped._2),
+                RFMUtility.minUnitRecency(grouped._2),
                 // frequency: count(transactions)
-                frequency(grouped._2),
+                RFMUtility.frequency(grouped._2),
                 // monetary: sum(transaction value)
-                sumGroupedMonetaryValue(grouped._2)))
+                RFMUtility.sumGroupedMonetaryValue(grouped._2)))
 
         // remove top and bottom outliers for RFM
         val filtered = RFMUtility.filterGroupedForRFM(grouped)
