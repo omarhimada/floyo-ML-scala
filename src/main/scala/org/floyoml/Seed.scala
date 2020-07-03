@@ -9,34 +9,8 @@ import org.floyoml.shared.{Configuration, Context}
 
 object Seed {
   /**
-   * Arguments passed to Seed, defining the expected behaviour of the process
-   */
-  object Arguments {
-    @Parameter(names = Array("-po", "--outputPredictions"))
-    var outputPredictions: Option[String] = None
-
-    /**
-     * Whether or not to attempt training
-     */
-    @Parameter(names = Array("-t", "--train"))
-    var train: Boolean = false
-
-    /**
-     * New KMeans models will be persisted here, or an existing model will be loaded from here
-     */
-    @Parameter(names = Array("-km-ml", "--kMeansModelLocation"))
-    var kMeansModelLocation: Option[String] = None
-
-    /**
-     * New Matrix Factorization models will be persisted here, or an existing model will be loaded from here
-     */
-    @Parameter(names = Array("-mf-ml", "--matrixFactorizationModelLocation"))
-    var matrixFactorizationModelLocation: Option[String] = None
-  }
-
-  /**
-   * Initializes the K-Means clustering process, either training a new model
-   * or loading an existing model
+   * Initializes the K-Means clustering process, either training and persisting new model
+   * or loading an existing model to make predictions
    * @return completed KMeansModel
    */
   def beginKMeans: KMeansModel =
@@ -51,7 +25,7 @@ object Seed {
 
   /**
    * Initializes the Matrix Factorization recommendations process, either training a new model
-   * or loading an existing model
+   * or loading an existing model to make predictions
    * @return completed MatrixFactorizationModel
    */
   def beginMatrixFactorization: MatrixFactorizationModel =
@@ -69,7 +43,7 @@ object Seed {
    * @see Arguments
    */
   def main(args: Array[String]): Unit = {
-    // parse arguments
+    // parse arguments via JCommander
     JCommander.newBuilder.addObject(Arguments).build().parse(args.toArray: _*)
 
     /**
@@ -91,5 +65,10 @@ object Seed {
       predictionOutputLocation = Configuration.Behaviour.Output.matrixFactorizationPredictionsLocalPath,
       // persist predictions in Elasticsearch
       writeToElasticsearch = true)
+
+    /**
+     * Logistic Regression
+     */
+    // todo
   }
 }
