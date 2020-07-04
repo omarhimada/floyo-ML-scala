@@ -1,18 +1,16 @@
 package org.floyoml.collab
 
-import scala.collection.mutable.ListBuffer
-
 import com.sksamuel.elastic4s.IndexAndType
-
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-
 import org.floyoml.elasticsearch.ElasticsearchWriter
-import org.floyoml.input.Recommendations
+import org.floyoml.input.{Recommendations, Transaction}
 import org.floyoml.output.RatedTransaction
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context}
+
+import scala.collection.mutable.ListBuffer
 
 object MatrixFactorizationPredictorStream {
   /**
@@ -32,11 +30,11 @@ object MatrixFactorizationPredictorStream {
     for (objectPath <- objectPaths) {
       val dStream = streamingContext.textFileStream(objectPath)
 
-      val streamOfRatedTransactions: DStream[RatedTransaction] =
+      val streamOfRatedTransactions: DStream[Transaction] =
         dStream
           .map(_.split(',') match {
             // transform a stream of strings to rated transactions for ALS
-            case Array(user, sku, total) => RatedTransaction(user.toInt, sku.toInt, total.toDouble)
+            case Array(user, sku, quantity, date, unitPrice) => Transaction(user.toInt, sku.toInt, quantity.toInt, date, unitPrice.toDouble)
           })
 
       // for each RDD of transactions being streamed from the object in S3...
@@ -44,7 +42,7 @@ object MatrixFactorizationPredictorStream {
         rdd.foreach { _ =>
           // convert the ratings to an RDD of integer tuples...
           val toPredict = rdd.map {
-            case RatedTransaction(user, sku, total) => (user, sku)
+            case Transaction(customerId, sku, quantity, date, unitPrice) => (customerId,sku)
           }
 
           // run the persisted model against the RDD of integer tuples
@@ -66,9 +64,11 @@ object MatrixFactorizationPredictorStream {
             )
 
             // use foreach on the RDD to loop over the predictions
-            predictions.foreach { rating =>
-              // write each prediction to Elasticsearch
-              esWriter.write(Seq(RatedTransaction(rating.user, rating.product, rating.rating)))
+            predictions.foreachPartitionAsync { part =>
+              part.foreach { rating =>
+                // write each prediction to Elasticsearch
+                esWriter.write(Seq(RatedTransaction(rating.user, rating.product, rating.rating)))
+              }
             }
           }
         }

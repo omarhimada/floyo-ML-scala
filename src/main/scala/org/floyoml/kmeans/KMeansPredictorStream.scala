@@ -2,21 +2,21 @@ package org.floyoml.kmeans
 
 import java.util.UUID
 
-import scala.collection.mutable.ListBuffer
 import com.sksamuel.elastic4s.IndexAndType
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import spray.json._
-import DefaultJsonProtocol._
 import org.floyoml.elasticsearch.ElasticsearchWriter
 import org.floyoml.input.Segmentation
 import org.floyoml.output.ClusterPrediction
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context, Utility}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
+
+import scala.collection.mutable.ListBuffer
 
 object KMeansPredictorStream {
-
   /**
    * Use a persisted K-Means model to make predictions
    * @param persistedKMeansModel an existing, trained K-Means model
@@ -72,9 +72,11 @@ object KMeansPredictorStream {
 
         // use foreach on the RDD to loop over the predictions
         streamOfTuples.foreachRDD { rdd =>
-          rdd.foreach { case (message, cluster) =>
-            // write each prediction to Elasticsearch
-            esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, message, cluster)))
+          rdd.foreachPartitionAsync { part =>
+            part.foreach { case (message, cluster) =>
+              // write each prediction to Elasticsearch
+              esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, message, cluster)))
+            }
           }
         }
       }

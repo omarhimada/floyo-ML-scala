@@ -8,7 +8,7 @@ import java.sql.Date
  */
 case class Transaction(
   customerId: Int,
-  sku: String,
+  sku: Int,
   quantity: Int,
   date: Date,
   unitPrice: Double)
