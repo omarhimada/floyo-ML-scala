@@ -7,16 +7,17 @@ import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.floyoml.elasticsearch.ElasticsearchWriter
-import org.floyoml.input.Segmentation
+import org.floyoml.input.{Segmentation, Transaction}
 import org.floyoml.output.ClusterPrediction
 import org.floyoml.s3.S3Utility
-import org.floyoml.shared.{Configuration, Context, Utility}
-import spray.json.DefaultJsonProtocol._
+import org.floyoml.shared.{Configuration, Context}
+import org.joda.time.DateTime
 import spray.json._
 
 import scala.collection.mutable.ListBuffer
 
 object KMeansPredictorStream {
+
   /**
    * Use a persisted K-Means model to make predictions
    * @param persistedKMeansModel an existing, trained K-Means model
@@ -34,48 +35,48 @@ object KMeansPredictorStream {
     for (objectPath <- objectPaths) {
       val dStream = streamingContext.textFileStream(objectPath)
 
-      val stream: DStream[String] =
+      val stream: DStream[(Int, DateTime, Double, Double)] =
         dStream
-          // filter data from stream and marshall to JSON
-          // get only message events
-          .filter(_.parseJson.convertTo[Map[String, String]].get("type") match {
-            case Some(str) => str == "message"
-            case None => false
-          })
-          // extract message text from the event
-          .map(_.parseJson.convertTo[Map[String, String]].get("text") match {
-            case Some(str) => str
-            case None => ""
-          })
+          .map(_.parseJson.convertTo[Transaction])
+          // (customerId, date, recency, monetary value)
+          .map(t => (t.customerId, t.date, t.unitRecency, t.unitMonetary))
 
-      // transform stream data and predict clusters
-      val streamOfTuples = transformAndPredict(stream, persistedKMeansModel)
+      stream.foreachRDD { rdd =>
+        val grouped =
+          rdd
+            // RDD[(customerId, Iterable(customerId, uR, uM))]
+            .groupBy(_._1)
+            .map(grouped =>
+              // RDD[(customerId: Int, R: Double, F: Double, M: Double)]
+              (grouped._1,
+                // recency: min(time since last transaction)
+                RFMUtility.minUnitRecency(grouped._2),
+                // frequency: count(transactions)
+                RFMUtility.frequency(grouped._2),
+                // monetary: sum(transaction value)
+                RFMUtility.sumGroupedMonetaryValue(grouped._2)))
 
-      /* print k-mean results as pairs (m, c)
-       * where m is the message text and c is the associated cluster */
-      streamOfTuples.print()
+        // remove top and bottom outliers for RFM
+        val filtered = RFMUtility.filterGroupedForRFM(grouped)
 
-      if (predictionOutputLocation != null) {
-        // save to results to the file, if file name specified
-        streamOfTuples.saveAsTextFiles(predictionOutputLocation)
-      }
+        // make predictions using the persisted model
+        val predictions = RFMUtility.transformRDDAndPredict(filtered, persistedKMeansModel)
 
-      if (writeToElasticsearch) {
-        // write the predictions to Elasticsearch
-        val esWriter = new ElasticsearchWriter[ClusterPrediction](
-          uri = Configuration.EnvironmentVariables.elasticsearchURI,
-          rollingDate = true,
-          indexAndType = IndexAndType(Configuration.Elasticsearch.kMeansProcessIndex, classOf[ClusterPrediction].getSimpleName),
-          numberOfBulkDocumentsToWrite = 10,
-          initialDocuments = ListBuffer.empty[ClusterPrediction]
-        )
+        if (writeToElasticsearch) {
+          // write the predictions to Elasticsearch
+          val esWriter = new ElasticsearchWriter[ClusterPrediction](
+            uri = Configuration.EnvironmentVariables.elasticsearchURI,
+            rollingDate = true,
+            indexAndType = IndexAndType(Configuration.Elasticsearch.kMeansProcessIndex, classOf[ClusterPrediction].getSimpleName),
+            numberOfBulkDocumentsToWrite = 10,
+            initialDocuments = ListBuffer.empty[ClusterPrediction]
+          )
 
-        // use foreach on the RDD to loop over the predictions
-        streamOfTuples.foreachRDD { rdd =>
-          rdd.foreachPartitionAsync { part =>
-            part.foreach { case (message, cluster) =>
+          // use foreach on the RDD to loop over the predictions
+          predictions.foreachPartitionAsync { iter =>
+            iter.foreach { case (customerId, cluster) =>
               // write each prediction to Elasticsearch
-              esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, message, cluster)))
+              esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, customerId, cluster)))
             }
           }
         }
@@ -89,12 +90,5 @@ object KMeansPredictorStream {
     streamingContext.awaitTermination
   }
 
-  /**
-   * transform stream of strings to stream of (string, vector) tuples and set this stream as input data for prediction
-   */
-  def transformAndPredict(dStream: DStream[String], persistedKMeansModel: KMeansModel): DStream[(String, Int)] = {
-    dStream
-      .map(s => (s, Utility.featurize(s)))
-      .map(p => (p._1, persistedKMeansModel.predict(p._2)))
-  }
+
 }

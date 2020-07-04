@@ -3,10 +3,12 @@ package org.floyoml.kmeans
 import java.io.File
 
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
-
-import org.floyoml.input.Segmentation
+import org.apache.spark.rdd.RDD
+import org.floyoml.input.{Segmentation, Transaction}
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Context, Utility}
+import org.joda.time.DateTime
+import spray.json._
 
 object KMeansTrainer {
   /**
@@ -38,8 +40,30 @@ object KMeansTrainer {
     // union our many datasets to a single RDD
     val datasetToTrain = Utility.unionManyDatasets(objectPaths)
 
-    // parse and cache
-    val parsedData = datasetToTrain.map(Utility.featurize).cache
+    val mapped: RDD[(Int, DateTime, Double, Double)] =
+      datasetToTrain
+        .map(_.parseJson.convertTo[Transaction])
+        // (customerId, date, recency, monetary value)
+        .map(t => (t.customerId, t.date, t.unitRecency, t.unitMonetary))
+
+    val grouped =
+      mapped
+        // RDD[(customerId, Iterable(customerId, uR, uM))]
+        .groupBy(_._1)
+        .map(grouped =>
+          // RDD[(customerId: Int, R: Double, F: Double, M: Double)]
+          (grouped._1,
+            // recency: min(time since last transaction)
+            RFMUtility.minUnitRecency(grouped._2),
+            // frequency: count(transactions)
+            RFMUtility.frequency(grouped._2),
+            // monetary: sum(transaction value)
+            RFMUtility.sumGroupedMonetaryValue(grouped._2)))
+
+    val filtered = RFMUtility.filterGroupedForRFM(grouped)
+
+    // featurize and cache the vectors (customer IDs are irrelevant since we are only training here)
+    val featurized = RFMUtility.featurizeRDD(filtered).map(rdd => rdd._2).cache
 
     /**
      * use the "Within Set Sum of Squared Errors" evaluation
@@ -51,10 +75,10 @@ object KMeansTrainer {
 
     for (clusters <- _minNumberOfClusters to _maxNumberOfClusters) {
       // train model
-      val model = KMeans.train(parsedData, clusters, _iterations)
+      val model = KMeans.train(featurized, clusters, _iterations)
 
       // evaluate "Within Set Sum of Squared Errors"
-      val withinSetSumOfSquaredErrors = model.computeCost(parsedData)
+      val withinSetSumOfSquaredErrors = model.computeCost(featurized)
 
       // keep track of the the 'best' model (ideal number of clusters)
       if (withinSetSumOfSquaredErrors < lowestWSSSE) {

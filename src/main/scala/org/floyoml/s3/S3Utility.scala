@@ -3,12 +3,11 @@ package org.floyoml.s3
 import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.services.s3.iterable.S3Objects
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import org.floyoml.input.{ChurnPrediction, MLTask, Recommendations, Segmentation}
+import org.floyoml.shared.{Configuration, Context}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
-import org.floyoml._
-import org.floyoml.input.{ChurnPrediction, MLTask, Recommendations, Segmentation}
-import org.floyoml.shared.{Configuration, Context}
 
 object S3Utility {
   /**
