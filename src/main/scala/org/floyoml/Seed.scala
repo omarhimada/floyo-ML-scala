@@ -1,6 +1,6 @@
 package org.floyoml
 
-import com.beust.jcommander.{JCommander, Parameter}
+import com.beust.jcommander.JCommander
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.floyoml.collab.{MatrixFactorizationPredictorStream, MatrixFactorizationTrainer}

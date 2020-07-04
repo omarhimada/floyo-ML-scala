@@ -7,12 +7,7 @@ import spray.json._
 /**
  * Input transaction (e.g.: eCommerce sale)
  */
-case class Transaction(customerId: Int,
-                       sku: String,
-                       quantity: Int,
-                       date: DateTime,
-                       unitPrice: Double) {
-
+case class Transaction(customerId: Int, sku: Int, quantity: Int, date: DateTime, unitPrice: Double) {
   /**
    * Unit of recency for RFM
    * @return number of days since today as a Double
@@ -35,10 +30,10 @@ object Transaction {
   // Transaction can be parsed from JSON
   implicit val reader: JsonReader[Transaction] = (value: JsValue) => {
     value.asJsObject.getFields("customerId", "sku", "quantity", "date", "unitPrice") match {
-      case Seq(JsNumber(customerId), JsString(sku), JsNumber(quantity), JsString(date), JsNumber(unitPrice)) =>
+      case Seq(JsNumber(customerId), JsNumber(sku), JsNumber(quantity), JsString(date), JsNumber(unitPrice)) =>
         Transaction(
           customerId.toInt,
-          sku,
+          sku.toInt,
           quantity.toInt,
           parser.parseDateTime(date),
           unitPrice.toInt)
