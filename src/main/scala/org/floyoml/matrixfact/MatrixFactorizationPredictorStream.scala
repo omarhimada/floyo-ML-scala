@@ -1,4 +1,4 @@
-package org.floyoml.collab
+package org.floyoml.matrixfact
 
 import com.sksamuel.elastic4s.IndexAndType
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
@@ -9,6 +9,7 @@ import org.floyoml.input.{Recommendations, Transaction}
 import org.floyoml.output.RatedTransaction
 import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context}
+import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 
 import scala.collection.mutable.ListBuffer
 
@@ -30,11 +31,13 @@ object MatrixFactorizationPredictorStream {
     for (objectPath <- objectPaths) {
       val dStream = streamingContext.textFileStream(objectPath)
 
+      val dateParser: DateTimeFormatter = ISODateTimeFormat.basicDateTime
       val streamOfRatedTransactions: DStream[Transaction] =
         dStream
           .map(_.split(',') match {
             // transform a stream of strings to rated transactions for ALS
-            case Array(user, sku, quantity, date, unitPrice) => Transaction(user.toInt, sku.toInt, quantity.toInt, date, unitPrice.toDouble)
+            case Array(user, sku, quantity, date, unitPrice) =>
+              Transaction(user.toInt, sku.toInt, quantity.toInt, dateParser.parseDateTime(date), unitPrice.toDouble)
           })
 
       // for each RDD of transactions being streamed from the object in S3...

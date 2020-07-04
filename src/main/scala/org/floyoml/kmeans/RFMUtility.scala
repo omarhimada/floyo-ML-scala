@@ -75,6 +75,25 @@ object RFMUtility {
         g._4 < topOutlierMonetary && g._4 > bottomOutlierMonetary)
   }
 
+  /**
+   * Group an RDD of transactions by customerId (param 0)
+   * @param rdd RDD of transactions as (customerId: Int, date: DateTime, unitRecency: Double, unitMonetary: Double)
+   * @return RDD of grouped, transformed transactions as (customerId: Int, recency: Double, frequency: Double, monetary: Double)
+   */
+  def groupRddByCustomerIdAndTransform(rdd: RDD[(Int, DateTime, Double, Double)]): RDD[(Int, Double, Double, Double)] =
+    rdd
+      // RDD[(customerId, Iterable(customerId, uR, uM))]
+      .groupBy(_._1)
+      .map(grouped =>
+        // RDD[(customerId: Int, R: Double, F: Double, M: Double)]
+        (grouped._1,
+          // recency: min(time since last transaction)
+          RFMUtility.minUnitRecency(grouped._2),
+          // frequency: count(transactions)
+          RFMUtility.frequency(grouped._2),
+          // monetary: sum(transaction value)
+          RFMUtility.sumGroupedMonetaryValue(grouped._2)))
+
   // For min-hash
   private val _dimensions: Int = 1000
   private val tf = new HashingTF(_dimensions)

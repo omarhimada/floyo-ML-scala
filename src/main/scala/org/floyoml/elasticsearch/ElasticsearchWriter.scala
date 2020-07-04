@@ -61,7 +61,7 @@ class ElasticsearchWriter[T: Indexable](
 
     // check if the document buffer has reached capacity
     if (_documents.length > numberOfBulkDocumentsToWrite) {
-      // execute a bulk request
+      // execute a bulk request asynchronously
       _client.execute {
         bulk(
           bulkFromBuffer
@@ -71,7 +71,6 @@ class ElasticsearchWriter[T: Indexable](
       // empty the document buffer
       _documents.clear
 
-      // todo: search
       /*val response: Response[SearchResponse] = _client.execute {
         search(indexAndType.index).matchQuery("capital", "ulaanbaatar")
       }.await*/

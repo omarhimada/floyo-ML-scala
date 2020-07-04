@@ -46,20 +46,10 @@ object KMeansTrainer {
         // (customerId, date, recency, monetary value)
         .map(t => (t.customerId, t.date, t.unitRecency, t.unitMonetary))
 
-    val grouped =
-      mapped
-        // RDD[(customerId, Iterable(customerId, uR, uM))]
-        .groupBy(_._1)
-        .map(grouped =>
-          // RDD[(customerId: Int, R: Double, F: Double, M: Double)]
-          (grouped._1,
-            // recency: min(time since last transaction)
-            RFMUtility.minUnitRecency(grouped._2),
-            // frequency: count(transactions)
-            RFMUtility.frequency(grouped._2),
-            // monetary: sum(transaction value)
-            RFMUtility.sumGroupedMonetaryValue(grouped._2)))
+    // group by customerId and transform to (customerId, R, F, M)
+    val grouped = RFMUtility.groupRddByCustomerIdAndTransform(mapped)
 
+    // remove top and bottom outliers for RFM
     val filtered = RFMUtility.filterGroupedForRFM(grouped)
 
     // featurize and cache the vectors (customer IDs are irrelevant since we are only training here)

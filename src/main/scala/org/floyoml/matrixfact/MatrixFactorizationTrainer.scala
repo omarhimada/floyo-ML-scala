@@ -1,4 +1,4 @@
-package org.floyoml.collab
+package org.floyoml.matrixfact
 
 import java.io.File
 
@@ -32,13 +32,11 @@ object MatrixFactorizationTrainer {
     val modelForRecommendations = ALS.train(splitData(1), _rank, _numIterations, _lambda)
 
     val rddToTestWith = splitData(0).map {
-      case Rating(subject, activity, freq) =>
-        (subject, activity)
+      case Rating(subject, activity, freq) => (subject, activity)
     }
 
     val testPredictions = modelForRecommendations.predict(rddToTestWith)
-
-    // todo: write test predictions to Elasticsearch
+    // todo verify metrics of test
 
     // persist the trained model
     modelForRecommendations.save(Context.sparkContext, modelLocation)
@@ -48,11 +46,11 @@ object MatrixFactorizationTrainer {
 
   /**
    * Parse an input string as a Rating in order to train the Matrix Factorization model
-   * @param str input string from the downloaded S3 data file
-   * @return Rating
+   * @param str input string from the downloaded S3 data file with schema: (user, sku, quantity, date, unitPrice)
+   * @return Rating (user, sku, 0)
    */
   private def parseRatingsForALS(str: String): Rating = {
     val fields = str.split("::")
-    Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
+    Rating(fields(0).toInt, fields(1).toInt, 0)
   }
 }
