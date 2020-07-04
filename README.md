@@ -18,10 +18,10 @@ Distributed ML for eCommerce platforms (recommendations, churn prediction, segme
 
 | Feature                                                                                 | Progress   |
 |-----------------------------------------------------------------------------------------|------------|
-| Customer segmentation via K-Means++                                                     | RFT        |
-| Churn prediction via logistic regression                                                | To-do      |
-| Product & incentive recommendations via matrix factorization (collaborative filtering)  | Developing |
+| Customer segmentation via K-Means++                                                     | 0.1        |
+| Churn prediction via logistic regression                                                | In progress|
+| Product recommendations via matrix factorization (collaborative filtering)              | 0.1        |
 | Email automation                                                                        | To-do      |
-| Elasticsearch integration                                                               | RFT        |
-| S3 integration                                                                          | RFT        |
+| Elasticsearch integration                                                               | 0.1        |
+| S3 integration                                                                          | 0.1        |
 | Kibana dashboard & visualizations                                                       | To-do      |
