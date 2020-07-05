@@ -39,7 +39,7 @@ object Utility {
       manyDatasets.append(rdd)
     }
 
-    Context.sparkContext.union(manyDatasets)
+    Context.sparkContext.union(manyDatasets.toSeq)
   }
 
   /**
