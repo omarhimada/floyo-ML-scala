@@ -25,3 +25,4 @@ Distributed ML for eCommerce platforms (recommendations, churn prediction, segme
 | Elasticsearch integration                                                               | 0.1        |
 | S3 integration                                                                          | 0.1        |
 | Kibana dashboard & visualizations                                                       | To-do      |
+| Stream transactions from a Kafka topic in order to make predictions with trained models | In progress|
