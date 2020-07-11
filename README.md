@@ -1,6 +1,8 @@
 # floyo-ML-scala
 Distributed ML for eCommerce platforms (recommendations, churn prediction, segmentation) written in Scala, using Spark MLlib, Kafka, Elasticsearch (elastic4s), and AWS
 
+**Note:** *ML models are trained via batch download process from S3, and predictions are executed using the trained/persisted ML models and realtime streamed transactions via Kafka*
+
 ## Process:
 1. Drop your transactional/sales data into S3 to train the models=
 2. Trigger the training process 
