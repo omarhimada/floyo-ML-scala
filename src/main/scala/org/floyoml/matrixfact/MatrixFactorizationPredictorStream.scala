@@ -57,7 +57,6 @@ object MatrixFactorizationPredictorStream {
           }
 
           if (writeToElasticsearch) {
-            // write the predictions to Elasticsearch
             val esWriter = new ElasticsearchWriter[RatedTransaction](
               uri = Configuration.EnvironmentVariables.elasticsearchURI,
               rollingDate = true,

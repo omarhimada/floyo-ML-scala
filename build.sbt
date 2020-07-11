@@ -10,8 +10,9 @@ libraryDependencies ++= Seq(
   "org.apache.spark" % "spark-mllib_2.12" % "3.0.0",
   "org.apache.spark" % "spark-streaming_2.12" % "3.0.0",
 
-//  "org.apache.kafka" % "kafka-clients" % "2.5.0",
-//  "org.apache.kafka" % "kafka-streams" % "2.5.0",
+  "org.apache.kafka" % "kafka-clients" % "2.5.0",
+  "org.apache.kafka" % "kafka-streams" % "2.5.0",
+  "org.apache.kafka" %% "kafka-streams-scala" % "2.5.0",
 
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3",
 

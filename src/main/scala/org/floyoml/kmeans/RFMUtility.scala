@@ -1,9 +1,11 @@
 package org.floyoml.kmeans
 
+import org.apache.kafka.streams.kstream.KStream
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
+import org.floyoml.input.Transaction
 import org.floyoml.shared.Utility
 import org.joda.time.DateTime
 
@@ -24,13 +26,27 @@ object RFMUtility {
     grouped.map(_._4).sum
 
   /**
-   * Featurize an RDD of (customerId, RFM)) to (customerId, vector)
+   * Featurize a grouped stream of (customerId, RFM)) to (customerId, vector)
    * @param filtered the RDD after the grouped transactions were filtered
    */
   def featurizeRDD(filtered: RDD[(Int, Double, Double, Double)]): RDD[(Int, Vector)] =
     filtered
       .map(f =>
         (f._1, RFMUtility.featurizeForRFM(Iterable[Double](f._2, f._3, f._4))))
+
+  /**
+   * Transform a KStream of (customerId, (RFM)) to (customerId, vector) tuples, as input for prediction
+   */
+  def transformStreamAndPredict(toTransform: KStream[Double, Transaction]): KStream[Double, (Int, Vector)] =
+    toTransform
+      .mapValues(t => (t.customerId, featurizeForRFM(Iterable[Double](t.date.getDayOfYear.toDouble, t.unitRecency, t.unitMonetary))))
+
+  /**
+   * Use a KStream of (customerId, vector) to make predictions using a persisted model
+   */
+  def predictStream(toPredict: KStream[Double, (Int, Vector)], persistedKMeansModel: KMeansModel): KStream[Double, (Int, Int)] =
+    toPredict
+      .mapValues(t => (t._1, persistedKMeansModel.predict(t._2)))
 
   /**
    * Transform an RDD of (customerId, (RFM)) to (customerId, vector) tuples, and input

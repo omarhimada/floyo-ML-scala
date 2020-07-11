@@ -3,16 +3,14 @@ package org.floyoml.kmeans
 import java.util.UUID
 
 import com.sksamuel.elastic4s.IndexAndType
+import org.apache.kafka.streams.StreamsBuilder
+import org.apache.kafka.streams.kstream.KStream
 import org.apache.spark.mllib.clustering.KMeansModel
-import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.floyoml.elasticsearch.ElasticsearchWriter
-import org.floyoml.input.{Segmentation, Transaction}
+import org.floyoml.input.Transaction
 import org.floyoml.output.ClusterPrediction
-import org.floyoml.s3.S3Utility
 import org.floyoml.shared.{Configuration, Context}
-import org.joda.time.DateTime
-import spray.json._
 
 import scala.collection.mutable.ListBuffer
 
@@ -28,48 +26,36 @@ object KMeansPredictorStream {
     // initialize a new StreamingContext to retrieve data from AWS S3
     val streamingContext = new StreamingContext(Context.sparkContext, Seconds(60))
 
-    // get the paths to the objects in S3 that will be used to make predictions with the model
-    val objectPaths = S3Utility.retrieveS3ObjectPathsForStreaming(Segmentation(false), isTraining = false)
+    // streams builder
+    val builder = new StreamsBuilder
 
-    // for each relevant object in S3...
-    for (objectPath <- objectPaths) {
-      val dStream = streamingContext.textFileStream(objectPath)
+    /**
+     * Stream of transactions from the configured transaction topic
+     * (KStream[customerId: Double, transaction: Transaction])
+     */
+    val transactions: KStream[Double, Transaction] =
+      builder.stream[Double, Transaction](Configuration.EnvironmentVariables.kafkaTransactionsTopicName)
 
-      val stream: DStream[(Int, DateTime, Double, Double)] =
-        dStream
-          .map(_.parseJson.convertTo[Transaction])
-          // (customerId, date, recency, monetary value)
-          .map(t => (t.customerId, t.date, t.unitRecency, t.unitMonetary))
+    // transform the stream of transactions in preparation for prediction
+    val transformed = RFMUtility.transformStreamAndPredict(transactions)
 
-      stream.foreachRDD { rdd =>
-        // group by customerId and transform to (customerId, R, F, M)
-        val grouped = RFMUtility.groupRddByCustomerIdAndTransform(rdd)
+    // make predictions using the persisted model
+    val predictions = RFMUtility.predictStream(transformed, persistedKMeansModel)
 
-        // remove top and bottom outliers for RFM
-        val filtered = RFMUtility.filterGroupedForRFM(grouped)
+    if (writeToElasticsearch) {
+      val esWriter = new ElasticsearchWriter[ClusterPrediction](
+        uri = Configuration.EnvironmentVariables.elasticsearchURI,
+        rollingDate = true,
+        indexAndType = IndexAndType(Configuration.Elasticsearch.kMeansProcessIndex, classOf[ClusterPrediction].getSimpleName),
+        numberOfBulkDocumentsToWrite = 10,
+        initialDocuments = ListBuffer.empty[ClusterPrediction]
+      )
 
-        // make predictions using the persisted model
-        val predictions = RFMUtility.transformRDDAndPredict(filtered, persistedKMeansModel)
-
-        if (writeToElasticsearch) {
-          // write the predictions to Elasticsearch
-          val esWriter = new ElasticsearchWriter[ClusterPrediction](
-            uri = Configuration.EnvironmentVariables.elasticsearchURI,
-            rollingDate = true,
-            indexAndType = IndexAndType(Configuration.Elasticsearch.kMeansProcessIndex, classOf[ClusterPrediction].getSimpleName),
-            numberOfBulkDocumentsToWrite = 10,
-            initialDocuments = ListBuffer.empty[ClusterPrediction]
-          )
-
-          // use foreach on the RDD to loop over the predictions
-          predictions.foreachPartitionAsync { iter =>
-            iter.foreach { case (customerId, cluster) =>
-              // write each prediction to Elasticsearch
-              esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, customerId, cluster)))
-            }
-          }
-        }
-      }
+      // use foreach on the stream
+      predictions.foreach((k, v) => {
+        // write each prediction to Elasticsearch
+        esWriter.write(Seq(ClusterPrediction(UUID.randomUUID.toString, v._1, v._2)))
+      })
     }
 
     // run spark streaming application
