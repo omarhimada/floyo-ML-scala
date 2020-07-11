@@ -37,7 +37,7 @@ object KMeansPredictorStream {
       builder.stream[Double, Transaction](Configuration.EnvironmentVariables.kafkaTransactionsTopicName)
 
     // transform the stream of transactions in preparation for prediction
-    val transformed = RFMUtility.transformStreamAndPredict(transactions)
+    val transformed = RFMUtility.transformStream(transactions)
 
     // make predictions using the persisted model
     val predictions = RFMUtility.predictStream(transformed, persistedKMeansModel)

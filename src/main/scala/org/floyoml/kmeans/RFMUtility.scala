@@ -37,7 +37,7 @@ object RFMUtility {
   /**
    * Transform a KStream of (customerId, (RFM)) to (customerId, vector) tuples, as input for prediction
    */
-  def transformStreamAndPredict(toTransform: KStream[Double, Transaction]): KStream[Double, (Int, Vector)] =
+  def transformStream(toTransform: KStream[Double, Transaction]): KStream[Double, (Int, Vector)] =
     toTransform
       .mapValues(t => (t.customerId, featurizeForRFM(Iterable[Double](t.date.getDayOfYear.toDouble, t.unitRecency, t.unitMonetary))))
 
